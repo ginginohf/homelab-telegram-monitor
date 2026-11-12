@@ -1,0 +1,13 @@
+{
+  "owner_id": 0,
+  "daily_hour": 9,
+  "docker": [],
+  "units": [],
+  "mounts": [
+    [
+      "System",
+      "/"
+    ]
+  ],
+  "health_status": "state/health.json"
+}
