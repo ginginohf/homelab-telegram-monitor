@@ -1,59 +1,73 @@
-# Telegram-монитор Linux-сервера
+# Homelab Telegram Monitor
 
-[![Tests](https://github.com/ginginohf/homelab-telegram-monitor/actions/workflows/tests.yml/badge.svg)](https://github.com/ginginohf/homelab-telegram-monitor/actions/workflows/tests.yml) · [MIT](LICENSE)
+**English** | [Русский](README.ru.md)
 
-Состояние systemd/Docker, CPU/RAM/дисков/температуры, Intel i915 GPU, уведомления с гистерезисом и ежедневный отчёт. Доступ только владельцу в личном чате.
+[![Tests](https://github.com/ginginohf/homelab-telegram-monitor/actions/workflows/tests.yml/badge.svg)](https://github.com/ginginohf/homelab-telegram-monitor/actions/workflows/tests.yml) [MIT](LICENSE)
 
-Редакция 0.1.0 под лицензией MIT. Не содержит настроек конкретного сервера и пользовательских данных. Это самостоятельная адаптация, а не побитная копия рабочего развёртывания.
+Ask a Telegram bot for Linux service status, CPU/RAM/disk/temperature metrics and Intel GPU engine utilization, and receive threshold alerts.
 
-## Требования
+## What it does
 
-Linux, Python 3.11+, curl; systemctl/journalctl для соответствующих функций; sensors необязателен.
+- `/status` combines the configured health report with failed systemd units; stale health reports are flagged.
+- `/metrics` shows uptime, CPU load/utilization, RAM, swap, mounted disks, temperature and Intel i915 GPU activity when available.
+- `/report` combines status and metrics; `/logs` exposes only configured service/container logs (or recent system errors).
+- Background monitoring provides threshold alerts, recovery notifications and a daily report.
+- GPU alerts use the busiest engine: above 95% triggers an alert, at or below 90% recovers, with a six-hour reminder interval.
+- Commands are accepted only from the configured owner in a private chat. There is no arbitrary shell, restart or delete command.
 
-## Развёртывание
+## Examples and screenshots
 
-Скачайте проект:
+See [worked examples](docs/EXAMPLES.md) for reproducible demonstrations and output. Examples use synthetic data; no private server configuration is included.
+
+```text
+Сервер: есть замечания
+✅ web-demo
+⚠️ backup-demo
+
+Замечания: backup-demo
+Проверено: <current UTC time>
+
+Видеоядро Intel: 96.2% (самый занятый блок, среднее за 10 с)
+GPU: копирование 0.4%, 3D/вычисления 8.1%, видеокодеки 96.2%
+```
+
+This excerpt is captured from the synthetic example; see the linked example for mocked operations and reproduction steps. Application output may remain Russian.
+
+## Requirements
+
+Linux, Python 3.11+, curl; systemctl/journalctl for service checks, optional sensors and Docker.
+
+## Quick start
 
 ```sh
 git clone https://github.com/ginginohf/homelab-telegram-monitor.git
 cd homelab-telegram-monitor
-```
-
-Следующие команды выполняются из корня репозитория. Не используйте production-данные для первого запуска.
-
-```sh
 cp config.example.json config.json
-# В config.json укажите свой owner_id и разрешённые units/docker.
+# Set owner_id and allowed service/container names in config.json.
 export TELEGRAM_BOT_TOKEN="$(python3 -c 'import getpass; print(getpass.getpass("Telegram token: "))')"
 python3 bot.py
 ```
 
-## Настройки и ограничения
+## Configuration and limits
 
-Токен только в окружении. owner_id в примере равен0 и должен быть заменён. health_status может ссылаться на результат homelab-health-agent; без него /status покажет отсутствие проверки. Прокси HTTPS_PROXY необязателен. Доставка архивов из частной установки исключена из первой редакции: /backup сообщает об этом и ничего не отправляет. GPU требует доступ к perf/i915 и поддерживает x86_64; отсутствие счётчика не означает0%. Не выдавайте root только ради обычных метрик; журналы/Docker/PMU требуют отдельного продуманного доступа. Самый занятый GPU-блок >95% вызывает предупреждение, <=90% — восстановление, повтор через6часов.
+Intel GPU counters require compatible i915 PMU access on x86_64; unavailable telemetry is not 0% usage. Ordinary metrics do not justify granting unrestricted root. Docker, journal and PMU permissions need deliberate setup. Backup delivery is not included: `/backup` explains the limitation. Command text currently remains Russian even though this documentation is bilingual.
 
-## Проверки
+## Tests
 
 ```sh
 python3 -m unittest discover -s tests -v
 ```
 
-Для проектов с requirements.txt сначала установите зависимости в виртуальное окружение. Результаты локальных проверок и ограничения — в TESTING.md. CI предназначен для Linux; аппаратные счётчики и реальные диски в CI не эмулируются.
+Install dependencies first when `requirements.txt` is present. See [TESTING.md](TESTING.md) for scope and limitations.
 
-## Обновление и откат
+## Documentation
 
-Сохраните конфигурацию и данные отдельно от кода. Остановите только этот экземпляр, замените код, выполните тесты, запустите снова. Не переносите тестовые базы поверх рабочих. Подробности — RESTORE.md.
+- [Examples](docs/EXAMPLES.md)
+- [Recovery and upgrades](RESTORE.md)
+- [Security](SECURITY.md)
+- [Contributing](CONTRIBUTING.md)
+- [Third-party components](THIRD_PARTY.md)
 
-## Приватность и публикация
+## License
 
-.env/config.json, базы, журналы, state и зависимости исключены из Git. Игнорирование не очищает уже закоммиченные данные: перед push повторите аудит. README-примеры не содержат действующих учётных данных. См. SECURITY.md, CONTRIBUTING.md, THIRD_PARTY.md. Собственный код распространяется по [MIT](LICENSE). Сторонние компоненты сохраняют свои условия.
-
-## Документация и обратная связь
-
-- [Проверки и их ограничения](TESTING.md)
-- [Обновление и восстановление](RESTORE.md)
-- [Безопасность и секреты](SECURITY.md)
-- [Как предложить изменение](CONTRIBUTING.md)
-- [Сторонние компоненты](THIRD_PARTY.md)
-
-Сообщая об ошибке через Issues, укажите версию ОС, команду запуска и ожидаемый результат. Удалите из журналов токены, пароли и личные данные.
+Original project code is available under the [MIT License](LICENSE). Third-party components retain their own licenses.
